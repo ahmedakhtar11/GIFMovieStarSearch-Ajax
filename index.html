@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+
+    <!--Page Title-->
+    <title>GIF Search Movie Stars</title>
+
+    <!--Adding BootStrap-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+     <!--Adding CSS-->
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+
+    <!--Adding jQuery-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+</head>
+<body>
+    <!--HTML-->
+    <!--Theme Music-->
+    <div id="thememusic">
+        <button id="playbtn"><span class="glyphicon glyphicon-music"></span> Play Theme!</button>
+        <button id="pausebtn"><span class="glyphicon glyphicon-pause"></span> Pause Song</button>
+    </div>
+
+    <!--Main Container-->
+    <div class="container">
+        <h1>Movie Star GIF Search</h1>
+        <div id="buttons"></div>
+        <div id="images"></div>
+    </div>
+
+    <!--Side Search Panel-->
+    <div class="card text-blue bg-primary mb-3" style="max-width: 20rem;">
+        <div class="card-header"><strong>Add A Movie Star !</strong></div>
+        <form id="movie-form">
+            <input type="text" id="moviestar-input" class="form-control">
+
+            <!-- Button triggers new movie to be added -->
+            <input id="add-moviestar" type="submit" value="Submit" class="btn btn-success">
+
+        </form>
+    </div>
+
+    <!--JavaScript-->
+    <script type="text/javascript">
+
+        // Audio for Theme Song
+        var audioElement = document.createElement("audio");
+        audioElement.setAttribute("src", "assets/runescapeautumnvoyage.mp3");
+
+        // Theme Music Play Button
+        $("#playbtn").on("click", function () {
+            audioElement.play();
+        });
+
+        // Theme Music Pause Button
+        $("#pausebtn").on("click", function () {
+            audioElement.pause();
+        });
+
+        
+        $(document).ready(function () {
+
+            var moviestars = ["Denzel", "Scarface", "Jackie Chan", "Will Smith"];
+
+            // Function for displaying movie stars
+            function renderButtons() {
+
+                // Deleting the moviestar buttons prior to adding new movie buttons
+                // (This is necessary because it will repeat all of the variable buttons along with itself otherwise!)
+                $("#buttons").empty();
+
+                // Looping through the array of moviestars
+                for (var i = 0; i < moviestars.length; i++) {
+
+                    // Dynamicaly generating buttons for each movie in the array.
+                    // The code $("<button>") is what jQuery needs to create a start and end tag. (<button></button>)
+                    var a = $("<button>");
+
+                    // Adding a class of moviestar-btn to our button
+                    a.addClass("moviestar-btn");
+                    // Adding a data-attribute with a value of the moviestar at index i
+                    a.attr("data-name", moviestars[i]);
+                    // Providing the button's text with a value of the moviestar at index i
+                    a.text(moviestars[i]);
+                    // Adding the button we create to the HTML
+                    $("#buttons").append(a);
+                }
+            }
+
+            // Initially Rendering the Buttons
+            renderButtons();
+            // This function handles events where one button is clicked
+            $("#add-moviestar").on("click", function (event) {
+                // event.preventDefault() prevents the form from trying to submit itself.
+                // We're using a form so that the user can hit enter instead of clicking the button if they want
+                event.preventDefault();
+                // This line will grab the text from the input box
+                var moviestar = $("#moviestar-input").val().trim();
+                // The space from the textbox is then added to our array
+                moviestars.push(moviestar);
+                // calling renderButtons which handles the processing of our movie array
+                renderButtons();
+            });
+
+            // Event listener for all button elements
+            $("#buttons").on("click", "button", function () {
+                event.preventDefault();
+                $("#images").empty();
+
+                // In this case, the "this" keyword refers to the button that was clicked
+                var moviestarselection = $(this).attr("data-name");
+
+                // URL to search Giphy for the name of the moviestar
+                var queryURL = "https://api.giphy.com/v1/gifs/search?q=" +
+                    moviestarselection + "&api_key=I32uOeRAqgxPQtXyiKnpvRdaPmaPuaD7&limit=10";
+
+                // AJAX GET request
+                $.ajax({
+                    url: queryURL,
+                    method: "GET"
+                })
+                    // After the data comes back from the API
+                    .then(function (response) {
+
+                        // Storing an array of the resulting imageUrls in the imageUrls variable
+                        var imageUrls = response.data;
+
+                        // Looping over every resulting item
+                        for (var i = 0; i < imageUrls.length; i++) {
+
+                            // Only taking action if the photo has an appropriate rating
+                            if (imageUrls[i].rating !== "r" && imageUrls[i].rating !== "pg-13") {
+                                // Creating a div with the class "item"
+                                var gifDiv = $("<div class='item'>");
+
+                                // Storing the result item's rating
+                                var rating = imageUrls[i].rating;
+
+                                // Creating a paragraph tag with the result item's rating
+                                var p = $("<h2>").text("Rating: " + rating);
+
+                                // Creating an image tag
+                                var moviestarImage = $("<img>");
+                                
+                                // Initial Source attribute of img tag is Animated
+                                moviestarImage.attr("src", imageUrls[i].images.fixed_height.url);
+
+                                // Attribute to change GIF to become still
+                                moviestarImage.attr('animated', imageUrls[i].images.fixed_height_still.url);
+
+                                // Appending the paragraph and moviestarImage we created to the "gifDiv" div we created
+                                gifDiv.append(p);
+                                gifDiv.append(moviestarImage);
+
+                                // Prepending the gifDiv to the "#gifs-appear-here" div in the HTML
+                                $("#images").prepend(gifDiv);
+                            }
+                        };
+                    });
+            });
+
+            //on.click function to change GIFS from Still to Animated
+            $("#images").on("click", "img", function () {
+                var b = $(this).attr('src');
+                $(this).attr('src', $(this).attr('animated'));
+                $(this).attr('animated', b);
+
+            });
+        });
+
+    </script>
+</body>
+</html>
